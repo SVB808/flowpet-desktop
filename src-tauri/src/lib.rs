@@ -299,9 +299,10 @@ CREATE TABLE IF NOT EXISTS corrections(id TEXT PRIMARY KEY,created_at INTEGER NO
         let mut statement = self.conn.prepare(
             "SELECT id,start_ts,end_ts,process_name,context_title,label,confidence,category,reason,source FROM (SELECT * FROM activity_segments WHERE end_ts>=?1 ORDER BY end_ts DESC LIMIT ?2) ORDER BY start_ts",
         )?;
-        statement
+        let rows = statement
             .query_map(params![since, limit], segment_row)?
-            .collect()
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
     }
 
     fn record(
@@ -411,9 +412,10 @@ CREATE TABLE IF NOT EXISTS corrections(id TEXT PRIMARY KEY,created_at INTEGER NO
         let mut statement = self.conn.prepare(
             "SELECT id,start_ts,end_ts,process_name,context_title,label,confidence,category,reason,source FROM activity_segments WHERE source='rules_pending' AND ?1-start_ts>=20 ORDER BY end_ts DESC LIMIT 3",
         )?;
-        statement
+        let rows = statement
             .query_map(params![now], segment_row)?
-            .collect()
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
     }
 
     fn corrected(&self, process: &str, title: Option<&str>) -> rusqlite::Result<bool> {
