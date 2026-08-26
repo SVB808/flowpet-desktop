@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "FlowPet",
+  "version": "0.1.0",
+  "identifier": "dev.flowpet.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      { "label": "main", "title": "FlowPet", "width": 1240, "height": 820, "minWidth": 900, "minHeight": 640, "center": true, "resizable": true },
+      { "label": "pet", "title": "FlowPet Companion", "width": 150, "height": 170, "resizable": false, "decorations": false, "transparent": true, "alwaysOnTop": true, "skipTaskbar": true, "shadow": false, "visible": false }
+    ],
+    "security": {
+      "csp": { "default-src": "'self' customprotocol: asset:", "connect-src": "ipc: http://ipc.localhost", "img-src": "'self' asset: http://asset.localhost blob: data:", "style-src": "'unsafe-inline' 'self'" },
+      "capabilities": ["default"],
+      "devCsp": { "default-src": "'self' customprotocol: asset:", "connect-src": "ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420", "img-src": "'self' asset: http://asset.localhost blob: data:", "style-src": "'unsafe-inline' 'self'" }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Productivity",
+    "shortDescription": "A local-first AI focus companion",
+    "longDescription": "Automatic local activity tracking, contextual focus classification, recovery coaching, quests, and a desktop companion.",
+    "windows": { "webviewInstallMode": { "type": "downloadBootstrapper" } }
+  }
+}

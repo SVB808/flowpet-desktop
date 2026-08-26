@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default FlowPet desktop capability",
+  "windows": ["main", "pet"],
+  "permissions": ["core:default"]
+}
