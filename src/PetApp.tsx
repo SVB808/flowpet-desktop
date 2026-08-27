@@ -101,7 +101,13 @@ export default function PetApp() {
     };
   }, []);
 
-  async function act(action: 'return' | 'break' | 'not_drift') {
+  useEffect(() => {
+    // Speech bubbles are wider than the collapsed companion. Resize the native
+    // window whenever a message is present so text and actions cannot be clipped.
+    void setCompanionExpanded(Boolean(message));
+  }, [message]);
+
+  async function act(action: 'return' | 'break' | 'not_drift' | 'dismiss') {
     if (nudgeId) await resolveNudge(nudgeId, action);
     nudgeActive.current = false;
     setMessage(null);
@@ -113,11 +119,19 @@ export default function PetApp() {
     await setCompanionExpanded(false);
   }
 
+  async function dismissMessage() {
+    if (kind === 'nudge') {
+      await act('dismiss');
+      return;
+    }
+    setMessage(null);
+    setKind(null);
+    await setCompanionExpanded(false);
+  }
+
   async function toggleStatus() {
     if (message && kind === 'notice') {
-      setMessage(null);
-      setKind(null);
-      await setCompanionExpanded(false);
+      await dismissMessage();
       return;
     }
     if (nudgeActive.current) return;
@@ -126,11 +140,31 @@ export default function PetApp() {
     setKind('notice');
   }
 
+  const stateLabel = state.replaceAll('_', ' ');
+
   return (
     <main className="pet-window">
       {message ? (
-        <section className="bubble">
-          <p>{message}</p>
+        <section className="bubble" aria-live="polite">
+          <button
+            type="button"
+            aria-label="Dismiss companion message"
+            title="Dismiss"
+            onClick={() => void dismissMessage()}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 3,
+              width: 28,
+              height: 28,
+              padding: 0,
+              borderRadius: 999,
+            }}
+          >
+            ×
+          </button>
+          <p style={{ paddingRight: 28 }}>{message}</p>
           <div>
             {kind === 'nudge' ? (
               <>
@@ -139,7 +173,7 @@ export default function PetApp() {
                 <button onClick={() => void act('not_drift')}>Not a drift</button>
               </>
             ) : (
-              <button onClick={() => void toggleStatus()}>Got it</button>
+              <button onClick={() => void dismissMessage()}>Got it</button>
             )}
           </div>
         </section>
@@ -147,9 +181,34 @@ export default function PetApp() {
       <button
         className="pet-stage"
         onDoubleClick={() => void toggleStatus()}
-        aria-label={`${name || 'FlowPet'} companion`}
+        aria-label={`${name || 'FlowPet'} companion. Double-click for status.`}
+        title="Double-click for status"
+        style={{ position: 'relative', height: 140 }}
       >
         <Mascot mascot={mascot} state={state} name={name} size="small" speaking={Boolean(message)} />
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 0,
+            transform: 'translateX(-50%)',
+            maxWidth: 126,
+            padding: '3px 7px',
+            borderRadius: 999,
+            background: 'rgba(24, 21, 31, 0.82)',
+            color: '#f4efff',
+            fontSize: 9,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            pointerEvents: 'none',
+          }}
+        >
+          {name || 'FlowPet'} · {stateLabel}
+        </span>
       </button>
     </main>
   );
