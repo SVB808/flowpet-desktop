@@ -3,5 +3,8 @@
   "identifier": "default",
   "description": "Default FlowPet desktop capability",
   "windows": ["main", "pet"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide"
+  ]
 }
