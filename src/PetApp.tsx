@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Mascot } from './components/Mascot';
 import { companionStatusLine, derivePetState, petStateFromLabel } from './lib/mascots';
 import {
@@ -140,16 +141,41 @@ export default function PetApp() {
     setKind('notice');
   }
 
+  async function hideCompanion() {
+    await getCurrentWindow().hide();
+  }
+
   const stateLabel = state.replaceAll('_', ' ');
 
   return (
     <main className="pet-window">
+      <button
+        type="button"
+        aria-label="Hide companion"
+        title="Hide companion"
+        onClick={() => void hideCompanion()}
+        style={{
+          position: 'absolute',
+          top: 6,
+          right: 6,
+          zIndex: 10,
+          width: 28,
+          height: 28,
+          padding: 0,
+          borderRadius: 999,
+          background: 'rgba(24, 21, 31, 0.84)',
+          color: '#f4efff',
+          border: '1px solid rgba(255,255,255,.12)',
+        }}
+      >
+        ×
+      </button>
       {message ? (
         <section className="bubble" aria-live="polite">
           <button
             type="button"
             aria-label="Dismiss companion message"
-            title="Dismiss"
+            title="Dismiss message"
             onClick={() => void dismissMessage()}
             style={{
               position: 'absolute',
