@@ -5,6 +5,9 @@
   "windows": ["main", "pet"],
   "permissions": [
     "core:default",
-    "core:window:allow-hide"
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position"
   ]
 }

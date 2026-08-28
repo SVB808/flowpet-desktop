@@ -1,0 +1,125 @@
+/* Companion-only usability fixes layered after the shared app stylesheet. */
+
+/* The body sits above the ears in the base renderer (z-index 3 vs 2). Raise
+   animal ears so small/round ears remain visible in onboarding, settings, and
+   the desktop companion. */
+.mascot__ear {
+  z-index: 4;
+}
+
+.mascot--otter .mascot__ear {
+  width: 15%;
+  height: 15%;
+  top: 25%;
+  border-radius: 50%;
+}
+
+.mascot--raccoon .mascot__ear {
+  width: 19%;
+  height: 21%;
+  top: 19%;
+  border-radius: 58% 58% 40% 40%;
+}
+
+.mascot--red-panda .mascot__ear {
+  width: 23%;
+  height: 25%;
+  top: 16%;
+  border-radius: 62% 62% 36% 36%;
+}
+
+.mascot--capybara .mascot__ear {
+  width: 14%;
+  height: 15%;
+  top: 25%;
+  border-radius: 50%;
+}
+
+.pet-window {
+  position: relative;
+  overflow: hidden;
+}
+
+.pet-window--message {
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 12px;
+}
+
+.pet-window--message .bubble {
+  width: min(350px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 158px);
+  margin: 0 4px 2px 0;
+  padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 0 1 auto;
+}
+
+.pet-window--message .bubble p {
+  margin: 2px 34px 12px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.pet-window--message .bubble div {
+  padding-bottom: 2px;
+}
+
+.pet-window--message .bubble button {
+  font-size: 11px;
+  padding: 8px 10px;
+}
+
+.bubble__dismiss,
+.pet-hide {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(24, 21, 31, 0.88);
+  color: #f4efff;
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+
+.bubble__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
+.pet-hide {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 10;
+}
+
+.pet-stage {
+  position: relative;
+  height: 140px;
+  flex: 0 0 140px;
+}
+
+.pet-state-label {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  max-width: 138px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(24, 21, 31, 0.82);
+  color: #f4efff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
