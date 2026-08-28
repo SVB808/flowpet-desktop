@@ -103,8 +103,8 @@ export default function PetApp() {
   }, []);
 
   useEffect(() => {
-    // Speech bubbles are wider than the collapsed companion. Resize the native
-    // window whenever a message is present so text and actions cannot be clipped.
+    // Native nudges expand the companion as well, but keeping this tied to message
+    // state also covers manual status notices and any future companion messages.
     void setCompanionExpanded(Boolean(message));
   }, [message]);
 
@@ -136,7 +136,6 @@ export default function PetApp() {
       return;
     }
     if (nudgeActive.current) return;
-    await setCompanionExpanded(true);
     setMessage(companionStatusLine(mascot, state, name));
     setKind('notice');
   }
@@ -148,30 +147,49 @@ export default function PetApp() {
   const stateLabel = state.replaceAll('_', ' ');
 
   return (
-    <main className="pet-window">
-      <button
-        type="button"
-        aria-label="Hide companion"
-        title="Hide companion"
-        onClick={() => void hideCompanion()}
-        style={{
-          position: 'absolute',
-          top: 6,
-          right: 6,
-          zIndex: 10,
-          width: 28,
-          height: 28,
-          padding: 0,
-          borderRadius: 999,
-          background: 'rgba(24, 21, 31, 0.84)',
-          color: '#f4efff',
-          border: '1px solid rgba(255,255,255,.12)',
-        }}
-      >
-        ×
-      </button>
+    <main
+      className="pet-window"
+      style={message ? { alignItems: 'stretch', justifyContent: 'stretch' } : undefined}
+    >
+      {!message ? (
+        <button
+          type="button"
+          aria-label="Hide companion"
+          title="Hide companion"
+          onClick={() => void hideCompanion()}
+          style={{
+            position: 'absolute',
+            top: 6,
+            right: 6,
+            zIndex: 10,
+            width: 28,
+            height: 28,
+            padding: 0,
+            borderRadius: 999,
+            background: 'rgba(24, 21, 31, 0.84)',
+            color: '#f4efff',
+            border: '1px solid rgba(255,255,255,.12)',
+          }}
+        >
+          ×
+        </button>
+      ) : null}
+
       {message ? (
-        <section className="bubble" aria-live="polite">
+        <section
+          className="bubble"
+          aria-live="polite"
+          style={{
+            width: '100%',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            minHeight: 0,
+            margin: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            alignSelf: 'stretch',
+          }}
+        >
           <button
             type="button"
             aria-label="Dismiss companion message"
@@ -190,8 +208,8 @@ export default function PetApp() {
           >
             ×
           </button>
-          <p style={{ paddingRight: 28 }}>{message}</p>
-          <div>
+          <p style={{ paddingRight: 32, marginTop: 4, overflowWrap: 'anywhere' }}>{message}</p>
+          <div style={{ paddingBottom: 2 }}>
             {kind === 'nudge' ? (
               <>
                 <button onClick={() => void act('return')}>Back to it</button>
@@ -203,39 +221,40 @@ export default function PetApp() {
             )}
           </div>
         </section>
-      ) : null}
-      <button
-        className="pet-stage"
-        onDoubleClick={() => void toggleStatus()}
-        aria-label={`${name || 'FlowPet'} companion. Double-click for status.`}
-        title="Double-click for status"
-        style={{ position: 'relative', height: 140 }}
-      >
-        <Mascot mascot={mascot} state={state} name={name} size="small" speaking={Boolean(message)} />
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: '50%',
-            bottom: 0,
-            transform: 'translateX(-50%)',
-            maxWidth: 126,
-            padding: '3px 7px',
-            borderRadius: 999,
-            background: 'rgba(24, 21, 31, 0.82)',
-            color: '#f4efff',
-            fontSize: 9,
-            fontWeight: 700,
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            pointerEvents: 'none',
-          }}
+      ) : (
+        <button
+          className="pet-stage"
+          onClick={() => void toggleStatus()}
+          aria-label={`${name || 'FlowPet'} companion. Click for status.`}
+          title="Click for status"
+          style={{ position: 'relative', height: 140 }}
         >
-          {name || 'FlowPet'} · {stateLabel}
-        </span>
-      </button>
+          <Mascot mascot={mascot} state={state} name={name} size="small" speaking={false} />
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              bottom: 0,
+              transform: 'translateX(-50%)',
+              maxWidth: 126,
+              padding: '3px 7px',
+              borderRadius: 999,
+              background: 'rgba(24, 21, 31, 0.82)',
+              color: '#f4efff',
+              fontSize: 9,
+              fontWeight: 700,
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              pointerEvents: 'none',
+            }}
+          >
+            {name || 'FlowPet'} · {stateLabel}
+          </span>
+        </button>
+      )}
     </main>
   );
 }
