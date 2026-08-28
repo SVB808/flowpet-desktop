@@ -1,15 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import {
+  currentMonitor,
+  getCurrentWindow,
+  LogicalPosition,
+  LogicalSize,
+} from '@tauri-apps/api/window';
 import { Mascot } from './components/Mascot';
 import { companionStatusLine, derivePetState, petStateFromLabel } from './lib/mascots';
 import {
   getDashboard,
   getSettings,
   resolveNudge,
-  setCompanionExpanded,
 } from './lib/api';
 import type { CompanionEvent, Dashboard, MascotId, PetState } from './lib/types';
+import './pet-overrides.css';
+
+const COLLAPSED_SIZE = { width: 170, height: 190 };
+const EXPANDED_SIZE = { width: 400, height: 480 };
+
+async function placePetWindow(expanded: boolean, show = false) {
+  const window = getCurrentWindow();
+  const target = expanded ? EXPANDED_SIZE : COLLAPSED_SIZE;
+
+  await window.setSize(new LogicalSize(target.width, target.height));
+
+  const monitor = await currentMonitor();
+  if (monitor) {
+    const monitorPosition = monitor.position.toLogical(monitor.scaleFactor);
+    const monitorSize = monitor.size.toLogical(monitor.scaleFactor);
+    const x = monitorPosition.x + monitorSize.width - target.width - 18;
+    const y = monitorPosition.y + monitorSize.height - target.height - 54;
+    await window.setPosition(new LogicalPosition(x, y));
+  }
+
+  if (show) await window.show();
+}
 
 export default function PetApp() {
   const [state, setState] = useState<PetState>('idle');
@@ -62,6 +88,7 @@ export default function PetApp() {
   }
 
   useEffect(() => {
+    void placePetWindow(false);
     void sync();
     const interval = window.setInterval(() => void sync(), 10_000);
     let unlistenCompanion: (() => void) | undefined;
@@ -70,6 +97,8 @@ export default function PetApp() {
     void listen<CompanionEvent>('flowpet://companion', (event) => {
       const payload = event.payload;
       if (payload.kind === 'nudge') {
+        // Nudges are proactive. Reveal the full bubble immediately; no click required.
+        void placePetWindow(true, true);
         clearTransientTimer();
         nudgeActive.current = true;
         setState('nudging');
@@ -77,6 +106,8 @@ export default function PetApp() {
         setNudgeId(payload.nudge_id || null);
         setKind('nudge');
       } else if (payload.kind === 'notice') {
+        // Any future companion notice should follow the same pop-up behavior.
+        void placePetWindow(true, true);
         setMessage(payload.message || null);
         setKind('notice');
       } else if (payload.kind === 'clear') {
@@ -84,6 +115,7 @@ export default function PetApp() {
         setMessage(null);
         setNudgeId(null);
         setKind(null);
+        void placePetWindow(false);
         void sync();
       } else if (!nudgeActive.current) {
         setState(petStateFromLabel(payload.label));
@@ -103,9 +135,8 @@ export default function PetApp() {
   }, []);
 
   useEffect(() => {
-    // Native nudges expand the companion as well, but keeping this tied to message
-    // state also covers manual status notices and any future companion messages.
-    void setCompanionExpanded(Boolean(message));
+    // Fallback for any message source that is not emitted through the companion event.
+    void placePetWindow(Boolean(message), Boolean(message));
   }, [message]);
 
   async function act(action: 'return' | 'break' | 'not_drift' | 'dismiss') {
@@ -117,7 +148,7 @@ export default function PetApp() {
     if (action === 'break') setState('break');
     else if (action === 'return') showTransient('recovering', 'neutral', 3000);
     else setState('neutral');
-    await setCompanionExpanded(false);
+    await placePetWindow(false);
   }
 
   async function dismissMessage() {
@@ -127,7 +158,7 @@ export default function PetApp() {
     }
     setMessage(null);
     setKind(null);
-    await setCompanionExpanded(false);
+    await placePetWindow(false);
   }
 
   async function toggleStatus() {
@@ -136,6 +167,7 @@ export default function PetApp() {
       return;
     }
     if (nudgeActive.current) return;
+    await placePetWindow(true, true);
     setMessage(companionStatusLine(mascot, state, name));
     setKind('notice');
   }
@@ -147,69 +179,32 @@ export default function PetApp() {
   const stateLabel = state.replaceAll('_', ' ');
 
   return (
-    <main
-      className="pet-window"
-      style={message ? { alignItems: 'stretch', justifyContent: 'stretch' } : undefined}
-    >
+    <main className={`pet-window ${message ? 'pet-window--message' : ''}`}>
       {!message ? (
         <button
           type="button"
           aria-label="Hide companion"
           title="Hide companion"
           onClick={() => void hideCompanion()}
-          style={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            zIndex: 10,
-            width: 28,
-            height: 28,
-            padding: 0,
-            borderRadius: 999,
-            background: 'rgba(24, 21, 31, 0.84)',
-            color: '#f4efff',
-            border: '1px solid rgba(255,255,255,.12)',
-          }}
+          className="pet-hide"
         >
           ×
         </button>
       ) : null}
 
       {message ? (
-        <section
-          className="bubble"
-          aria-live="polite"
-          style={{
-            width: '100%',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            minHeight: 0,
-            margin: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            alignSelf: 'stretch',
-          }}
-        >
+        <section className="bubble" aria-live="assertive">
           <button
             type="button"
             aria-label="Dismiss companion message"
             title="Dismiss message"
             onClick={() => void dismissMessage()}
-            style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              zIndex: 3,
-              width: 28,
-              height: 28,
-              padding: 0,
-              borderRadius: 999,
-            }}
+            className="bubble__dismiss"
           >
             ×
           </button>
-          <p style={{ paddingRight: 32, marginTop: 4, overflowWrap: 'anywhere' }}>{message}</p>
-          <div style={{ paddingBottom: 2 }}>
+          <p>{message}</p>
+          <div>
             {kind === 'nudge' ? (
               <>
                 <button onClick={() => void act('return')}>Back to it</button>
@@ -221,40 +216,19 @@ export default function PetApp() {
             )}
           </div>
         </section>
-      ) : (
-        <button
-          className="pet-stage"
-          onClick={() => void toggleStatus()}
-          aria-label={`${name || 'FlowPet'} companion. Click for status.`}
-          title="Click for status"
-          style={{ position: 'relative', height: 140 }}
-        >
-          <Mascot mascot={mascot} state={state} name={name} size="small" speaking={false} />
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              left: '50%',
-              bottom: 0,
-              transform: 'translateX(-50%)',
-              maxWidth: 126,
-              padding: '3px 7px',
-              borderRadius: 999,
-              background: 'rgba(24, 21, 31, 0.82)',
-              color: '#f4efff',
-              fontSize: 9,
-              fontWeight: 700,
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              pointerEvents: 'none',
-            }}
-          >
-            {name || 'FlowPet'} · {stateLabel}
-          </span>
-        </button>
-      )}
+      ) : null}
+
+      <button
+        className="pet-stage"
+        onClick={() => void toggleStatus()}
+        aria-label={`${name || 'FlowPet'} companion. Click for current status.`}
+        title="Click for current status"
+      >
+        <Mascot mascot={mascot} state={state} name={name} size="small" speaking={Boolean(message)} />
+        <span className="pet-state-label" aria-hidden="true">
+          {name || 'FlowPet'} · {stateLabel}
+        </span>
+      </button>
     </main>
   );
 }
